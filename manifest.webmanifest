@@ -1,11 +1,12 @@
 {
-  "name": "AI Suno Prompt Generator",
+  "name": "Suno Prompter Studio",
   "short_name": "Suno Prompter",
-  "description": "Generate professional Suno v4.5 prompts with AI-driven meta tags and natural language descriptions.",
-  "start_url": "./sunoprompter.html",
+  "description": "Generate Suno prompt sets, tagged lyrics, marketing matrices, and visual cover concepts.",
+  "start_url": "./sunoprompter.html?source=pwa",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f8fafc",
+  "background_color": "#f7f8fb",
   "theme_color": "#0ea5a4",
   "icons": [
     {
@@ -19,6 +20,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

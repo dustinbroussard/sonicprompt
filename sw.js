@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.1.0';
+const CACHE_VERSION = 'v1.2.0';
 const STATIC_CACHE = `suno-prompter-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
@@ -6,7 +6,8 @@ const STATIC_ASSETS = [
   './sunoprompter.html',
   './manifest.webmanifest',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-1024.png'
 ];
 
 self.addEventListener('install', (event) => {
