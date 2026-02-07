@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Generate Suno prompts, tagged lyrics, marketing matrices, and visual cover concepts.">
+    <meta name="theme-color" content="#4A14CC">
+    <meta name="color-scheme" content="light dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Suno Prompter">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https://openrouter.ai; worker-src 'self'; manifest-src 'self'">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Suno Prompter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #7029FF;
+            --accent-dark: #4A14CC;
+            --accent-soft: rgba(112, 41, 255, 0.18);
+            --secondary: #00A3FF;
+            --bg-primary: #02010A;
+            --bg-secondary: #090525;
+            --bg-card: #0e0a2f;
+            --text-primary: #f8f5ff;
+            --text-secondary: #c8c2e8;
+            --text-muted: #9a93c2;
+            --border-color: #1e174a;
+            --shadow-sm: 0 6px 18px rgba(2, 1, 10, 0.45);
+            --shadow-lg: 0 20px 40px rgba(2, 1, 10, 0.6);
+            --radius-md: 0.8rem;
+            --radius-lg: 1rem;
+            --radius-xl: 1.25rem;
+            --transition: 220ms ease-in-out;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #02010A;
+            --bg-secondary: #0c0830;
+            --bg-card: #141046;
+            --text-primary: #f8f5ff;
+            --text-secondary: #c8c2e8;
+            --text-muted: #9a93c2;
+            --border-color: #281b66;
+            --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.45);
+            --shadow-lg: 0 24px 45px rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', system-ui, sans-serif;
+            background: radial-gradient(circle at top, rgba(112, 41, 255, 0.22), transparent 45%),
+                        radial-gradient(circle at 15% 20%, rgba(0, 163, 255, 0.18), transparent 35%),
+                        var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background var(--transition), color var(--transition);
+            min-height: 100vh;
+        }
+
+        .page {
+            animation: fadeUp 0.7s ease both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .header {
+            display: grid;
+            gap: 1.5rem;
+            background: linear-gradient(135deg, rgba(74, 20, 204, 0.95), rgba(112, 41, 255, 0.9), rgba(0, 163, 255, 0.8));
+            color: #f8fafc;
+            padding: 2.5rem;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::after {
+            content: "";
+            position: absolute;
+            top: -30%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 65%);
+        }
+
+        .header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 3vw, 3rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            max-width: 520px;
+            font-size: 1.05rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.75rem;
+        }
+
+        .pill-button,
+        .settings-btn,
+        .theme-toggle,
+        .btn,
+        .ghost-btn {
+            border-radius: var(--radius-lg);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: transform var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition), border-color var(--transition);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .settings-btn {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            display: grid;
+            place-items: center;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            margin-right: 0.4rem;
+        }
+
+        .status-connected {
+            background: #22c55e;
+        }
+
+        .status-disconnected {
+            background: #ef4444;
+        }
+
+        .tab-bar {
+            display: none;
+            gap: 0.5rem;
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .tab-btn.is-active {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .panel {
+            display: grid;
+            gap: 1.8rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .textarea-container {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+
+        textarea,
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 0.95rem 1.1rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        textarea:focus,
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.2);
+        }
+
+        .char-count {
+            position: absolute;
+            bottom: 0.7rem;
+            right: 0.9rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .helper {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        .error-text {
+            font-size: 0.85rem;
+            color: #ef4444;
+            margin-top: 0.35rem;
+            display: none;
+        }
+
+        .field-error textarea,
+        .field-error input,
+        .field-error select {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.6rem;
+            align-items: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: #fff;
+            padding: 0.95rem 1.6rem;
+            border: none;
+            width: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .ghost-btn {
+            padding: 0.6rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .ghost-btn:hover {
+            background: var(--bg-secondary);
+        }
+
+        .loading-spinner {
+            display: none;
+            margin: 1rem auto 0;
+            width: 38px;
+            height: 38px;
+            border: 3px solid rgba(148, 163, 184, 0.3);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .output-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .output-title {
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: #FF9F00;
+            color: #fff;
+            border: none;
+            padding: 0.35rem 0.9rem;
+            border-radius: 0.7rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .copy-btn.copied {
+            background: #cc7f00;
+        }
+
+        .output-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .concept-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .concept-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            padding: 1.2rem;
+            box-shadow: var(--shadow-sm);
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .concept-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .concept-axis {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            color: var(--accent-dark);
+        }
+
+        .concept-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .palette-pill {
+            display: inline-flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .palette-pill span {
+            background: var(--bg-secondary);
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+        }
+
+        .export-section {
+            background: var(--bg-card);
+            padding: 1.8rem;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: #FF9F00;
+            color: #fff;
+            padding: 1rem 1.4rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            transform: translateX(120%);
+            transition: transform var(--transition);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(8px);
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 200ms ease;
+        }
+
+        .modal.is-open {
+            display: block;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            width: min(92%, 620px);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            transform: translateY(20px) scale(0.98);
+            opacity: 0;
+            transition: transform 240ms ease, opacity 240ms ease;
+        }
+
+        .modal.is-open .modal-content {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .close {
+            position: absolute;
+            right: 1.2rem;
+            top: 1rem;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color var(--transition);
+        }
+
+        .close:hover {
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .list-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .install-banner {
+            position: sticky;
+            top: 1rem;
+            margin: 0 auto 1.5rem;
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            z-index: 1200;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .install-banner[hidden] {
+            display: none;
+        }
+
+        .install-text h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .install-actions {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .pill-button {
+            padding: 0.55rem 1.1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .pill-button.primary {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: #fff;
+            border: none;
+        }
+
+        .pill-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        @media (max-width: 960px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 840px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            .controls {
+                justify-content: center;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .install-banner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .tab-bar {
+                display: flex;
+            }
+
+            .main-content {
+                margin-top: 0.5rem;
+            }
+
+            .panel {
+                display: none;
+            }
+
+            .panel.is-active {
+                display: grid;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="container page">
+        <div class="install-banner" id="installBanner" hidden>
+            <div class="install-text">
+                <h4>Install Suno Prompter</h4>
+                <p>Get faster access, offline support, and a clean home screen icon.</p>
+            </div>
+            <div class="install-actions">
+                <button class="pill-button" id="installDismiss">Not now</button>
+                <button class="pill-button primary" id="installAction">Install</button>
+            </div>
+        </div>
+
+        <div class="header">
+            <div>
+                <h1>Suno Prompter Studio</h1>
+                <p>Craft Suno prompt sets, tagged lyrics, marketing matrices, and four distinct visual cover concepts in one pass.</p>
+            </div>
+            <div class="controls">
+                <button class="settings-btn" onclick="openSettings()">
+                    <span class="status-indicator status-disconnected" id="statusIndicator"></span>
+                    Settings & Library
+                </button>
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" aria-label="Toggle theme" aria-pressed="false" title="Toggle theme">
+                    ☾
+                </button>
+            </div>
+        </div>
+
+        <div class="tab-bar" role="tablist">
+            <button class="tab-btn is-active" id="tab-input" data-tab="input" role="tab" aria-selected="true" aria-controls="panel-input" tabindex="0">Input</button>
+            <button class="tab-btn" id="tab-output" data-tab="output" role="tab" aria-selected="false" aria-controls="panel-output" tabindex="-1">Output</button>
+        </div>
+
+        <div class="main-content">
+            <div class="panel is-active" data-panel="input" id="panel-input" role="tabpanel" aria-labelledby="tab-input" aria-hidden="false">
+                <div class="card">
+                    <h2>Lyrics + Theme</h2>
+                    <div class="textarea-container" data-field="lyricsInput">
+                        <textarea id="lyricsInput" placeholder="Paste or write your lyrics...\n\nTip: Verse/chorus structure helps with tagging."></textarea>
+                        <div class="char-count" id="lyricsCount">0/4000</div>
+                        <p class="error-text" data-error-for="lyricsInput">Lyrics are required.</p>
+                    </div>
+                    <div class="textarea-container" data-field="themeInput">
+                        <textarea id="themeInput" placeholder="Theme + creative intent. Example: A phoenix comeback anthem for late-night drives."></textarea>
+                        <div class="char-count" id="themeCount">0/800</div>
+                        <p class="error-text" data-error-for="themeInput">Theme is required.</p>
+                    </div>
+                    <p class="helper">Lyrics and theme are required inputs.</p>
+                </div>
+
+                <div class="card">
+                    <h2>Sonic + Visual DNA</h2>
+                    <div class="form-group" data-field="sonicSelect">
+                        <label for="sonicSelect">Sonic Identity (Tone Profile)</label>
+                        <select id="sonicSelect"></select>
+                        <p class="helper">Select a tone profile that anchors the sound.</p>
+                        <p class="error-text" data-error-for="sonicSelect">Select a Sonic Identity.</p>
+                    </div>
+                    <div class="form-group" data-field="visualSelect">
+                        <label for="visualSelect">Visual DNA (Archetype)</label>
+                        <select id="visualSelect"></select>
+                        <p class="helper">Choose a predefined archetype or specify a custom visual DNA below.</p>
+                        <p class="error-text" data-error-for="visualSelect">Select a Visual DNA.</p>
+                    </div>
+                    <div class="form-group" data-field="customVisualDNA">
+                        <label for="customVisualDNA">Custom Visual DNA (optional)</label>
+                        <div class="input-row">
+                            <input type="text" id="customVisualDNA" placeholder="e.g., Neo-noir fashion editorial with prism lighting">
+                            <button class="ghost-btn" type="button" onclick="saveCustomVisualPreset()">Save Preset</button>
+                        </div>
+                        <p class="error-text" data-error-for="customVisualDNA">Enter a custom Visual DNA before saving.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="referenceImage">Reference Image (optional)</label>
+                        <input type="file" id="referenceImage" accept="image/*">
+                        <p class="helper" id="referenceHint">No image selected.</p>
+                    </div>
+                    <button class="btn" onclick="generateProject()" id="generateBtn">Generate Project</button>
+                    <div class="loading-spinner" id="loadingSpinner"></div>
+                </div>
+            </div>
+
+            <div class="panel" data-panel="output" id="panel-output" role="tabpanel" aria-labelledby="tab-output" aria-hidden="true">
+                <div class="card">
+                    <h2>Suno Prompt Set</h2>
+                    <div class="output-box">
+                        <div class="output-header">
+                            <span class="output-title">Suno Prompt</span>
+                            <button class="copy-btn" onclick="copyToClipboard('sunoPromptOutput', this)">Copy</button>
+                        </div>
+                        <div class="output-content" id="sunoPromptOutput">Generate a project to see your Suno prompt set.</div>
+                    </div>
+                    <div class="output-box">
+                        <div class="output-header">
+                            <span class="output-title">Tagged Lyrics</span>
+                            <button class="copy-btn" onclick="copyToClipboard('taggedLyricsOutput', this)">Copy</button>
+                        </div>
+                        <div class="output-content" id="taggedLyricsOutput">Tagged lyrics will appear here.</div>
+                    </div>
+                    <div class="output-box">
+                        <div class="output-header">
+                            <span class="output-title">Marketing Matrix</span>
+                            <button class="copy-btn" onclick="copyToClipboard('marketingOutput', this)">Copy</button>
+                        </div>
+                        <div class="output-content" id="marketingOutput">Marketing insights will appear here.</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Cover Concepts (4 Axes)</h2>
+                    <div class="concept-grid" id="conceptGrid">
+                        <div class="output-content">Concepts will appear here.</div>
+                    </div>
+                </div>
+
+                <div class="export-section">
+                    <button class="btn" onclick="exportProject()" id="exportBtn">Export Project JSON</button>
+                    <p class="helper">Exports only the latest generated results (in-memory).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettings()">&times;</span>
+            <h2>Settings & Identity Library</h2>
+            <div class="form-group">
+                <label for="apiKey">OpenRouter API Key</label>
+                <input type="password" id="apiKey" placeholder="Enter your OpenRouter API key">
+            </div>
+            <div class="form-group">
+                <label for="modelSelect">AI Model</label>
+                <select id="modelSelect">
+                    <option value="">Loading models...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="addSonic">Add Sonic Identity</label>
+                <input type="text" id="addSonic" placeholder="e.g., Neon Pop Diva">
+                <button class="ghost-btn" onclick="addSonicIdentity()">Add</button>
+            </div>
+            <div class="list-grid" id="sonicList"></div>
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label for="addVisual">Add Visual DNA</label>
+                <input type="text" id="addVisual" placeholder="e.g., Brutalist collage typography">
+                <button class="ghost-btn" onclick="addVisualDNA()">Add</button>
+            </div>
+            <div class="list-grid" id="visualList"></div>
+            <button class="btn" onclick="saveSettings()" style="margin-top: 1.5rem;">Save Settings</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        const INSTALL_PROMPT_FREQUENCY_DAYS = 0;
+        const DEFAULT_SONIC_IDENTITIES = [
+            'Gritty Underground',
+            'Inspirational Artist',
+            'Technical Producer'
+        ];
+        const DEFAULT_VISUAL_DNAS = [
+            'Cyberpunk 2077',
+            'Minimalist Vinyl',
+            'Oil Painting',
+            'Glitch Art'
+        ];
+        const REQUIRED_AXES = ['Literal', 'Emotional', 'Symbolic', 'Experimental'];
+
+        let deferredInstallPrompt = null;
+        let latestResult = null;
+        let currentSettings = {
+            apiKey: '',
+            selectedModel: ''
+        };
+        let sonicIdentities = [];
+        let visualDNAs = [];
+        let referenceImageData = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            loadTheme();
+            loadLibraries();
+            setupEventListeners();
+            renderIdentityLibraries();
+            loadModels();
+            registerServiceWorker();
+            setupInstallPrompt();
+            setupTabs();
+        });
+
+        function setupEventListeners() {
+            const lyricsInput = document.getElementById('lyricsInput');
+            const themeInput = document.getElementById('themeInput');
+            const lyricsCount = document.getElementById('lyricsCount');
+            const themeCount = document.getElementById('themeCount');
+            const referenceImage = document.getElementById('referenceImage');
+            const sonicSelect = document.getElementById('sonicSelect');
+            const visualSelect = document.getElementById('visualSelect');
+            const customVisualDNA = document.getElementById('customVisualDNA');
+
+            lyricsInput.addEventListener('input', function() {
+                const length = this.value.length;
+                lyricsCount.textContent = `${length}/4000`;
+                lyricsCount.style.color = length > 3800 ? '#f59e0b' : 'var(--text-muted)';
+                if (length > 4000) {
+                    lyricsCount.style.color = '#ef4444';
+                }
+                clearFieldError('lyricsInput');
+            });
+
+            themeInput.addEventListener('input', function() {
+                const length = this.value.length;
+                themeCount.textContent = `${length}/800`;
+                themeCount.style.color = length > 750 ? '#f59e0b' : 'var(--text-muted)';
+                if (length > 800) {
+                    themeCount.style.color = '#ef4444';
+                }
+                clearFieldError('themeInput');
+            });
+
+            document.getElementById('apiKey').addEventListener('input', function() {
+                currentSettings.apiKey = this.value;
+                updateConnectionStatus();
+                saveSettings();
+            });
+
+            document.getElementById('modelSelect').addEventListener('change', function() {
+                currentSettings.selectedModel = this.value;
+                saveSettings();
+            });
+
+            sonicSelect.addEventListener('change', () => clearFieldError('sonicSelect'));
+            visualSelect.addEventListener('change', () => clearFieldError('visualSelect'));
+            customVisualDNA.addEventListener('input', () => clearFieldError('customVisualDNA'));
+
+            referenceImage.addEventListener('change', handleImageUpload);
+
+            document.getElementById('installAction').addEventListener('click', handleInstall);
+            document.getElementById('installDismiss').addEventListener('click', dismissInstallPrompt);
+        }
+
+        function setupTabs() {
+            const tabs = document.querySelectorAll('[data-tab]');
+            tabs.forEach((tab) => {
+                tab.addEventListener('click', () => {
+                    const target = tab.getAttribute('data-tab');
+                    document.querySelectorAll('[data-tab]').forEach((btn) => {
+                        btn.classList.remove('is-active');
+                        btn.setAttribute('aria-selected', 'false');
+                        btn.setAttribute('tabindex', '-1');
+                    });
+                    tab.classList.add('is-active');
+                    tab.setAttribute('aria-selected', 'true');
+                    tab.setAttribute('tabindex', '0');
+                    document.querySelectorAll('[data-panel]').forEach((panel) => {
+                        if (panel.getAttribute('data-panel') === target) {
+                            panel.classList.add('is-active');
+                            panel.setAttribute('aria-hidden', 'false');
+                        } else {
+                            panel.classList.remove('is-active');
+                            panel.setAttribute('aria-hidden', 'true');
+                        }
+                    });
+                });
+            });
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                return;
+            }
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch((error) => {
+                    console.error('Service worker registration failed:', error);
+                });
+            });
+        }
+
+        function isInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function setupInstallPrompt() {
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                deferredInstallPrompt = event;
+                maybeShowInstallPrompt();
+            });
+
+            window.addEventListener('appinstalled', () => {
+                sessionStorage.setItem('installPromptDecision', 'accepted');
+                hideInstallPrompt();
+            });
+
+            maybeShowInstallPrompt();
+        }
+
+        function maybeShowInstallPrompt() {
+            if (isInstalled()) {
+                hideInstallPrompt();
+                return;
+            }
+
+            if (sessionStorage.getItem('installPromptDecision')) {
+                hideInstallPrompt();
+                return;
+            }
+
+            if (!deferredInstallPrompt) {
+                return;
+            }
+
+            if (INSTALL_PROMPT_FREQUENCY_DAYS > 0) {
+                const lastShown = localStorage.getItem('installPromptLastShown');
+                if (lastShown) {
+                    const lastDate = new Date(lastShown);
+                    const now = new Date();
+                    const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
+                    if (diffDays < INSTALL_PROMPT_FREQUENCY_DAYS) {
+                        return;
+                    }
+                }
+                localStorage.setItem('installPromptLastShown', new Date().toISOString());
+            }
+
+            showInstallPrompt();
+        }
+
+        function showInstallPrompt() {
+            const banner = document.getElementById('installBanner');
+            banner.hidden = false;
+        }
+
+        function hideInstallPrompt() {
+            const banner = document.getElementById('installBanner');
+            banner.hidden = true;
+        }
+
+        async function handleInstall() {
+            if (!deferredInstallPrompt) {
+                return;
+            }
+
+            deferredInstallPrompt.prompt();
+            const choice = await deferredInstallPrompt.userChoice;
+
+            sessionStorage.setItem('installPromptDecision', choice.outcome === 'accepted' ? 'accepted' : 'dismissed');
+            deferredInstallPrompt = null;
+            hideInstallPrompt();
+        }
+
+        function dismissInstallPrompt() {
+            sessionStorage.setItem('installPromptDecision', 'dismissed');
+            hideInstallPrompt();
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('sunoGeneratorSettings');
+            if (saved) {
+                currentSettings = JSON.parse(saved);
+                document.getElementById('apiKey').value = currentSettings.apiKey || '';
+                updateConnectionStatus();
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('sunoGeneratorSettings', JSON.stringify(currentSettings));
+            updateConnectionStatus();
+        }
+
+        function updateConnectionStatus() {
+            const indicator = document.getElementById('statusIndicator');
+            const hasKey = currentSettings.apiKey && currentSettings.apiKey.length > 10;
+
+            indicator.className = hasKey
+                ? 'status-indicator status-connected'
+                : 'status-indicator status-disconnected';
+        }
+
+        function loadLibraries() {
+            const savedSonic = localStorage.getItem('sunoSonicIdentities');
+            const savedVisual = localStorage.getItem('sunoVisualDNAs');
+
+            sonicIdentities = savedSonic ? JSON.parse(savedSonic) : [...DEFAULT_SONIC_IDENTITIES];
+            visualDNAs = savedVisual ? JSON.parse(savedVisual) : [...DEFAULT_VISUAL_DNAS];
+
+            renderIdentityOptions();
+        }
+
+        function saveLibraries() {
+            localStorage.setItem('sunoSonicIdentities', JSON.stringify(sonicIdentities));
+            localStorage.setItem('sunoVisualDNAs', JSON.stringify(visualDNAs));
+        }
+
+        function renderIdentityOptions() {
+            const sonicSelect = document.getElementById('sonicSelect');
+            const visualSelect = document.getElementById('visualSelect');
+
+            sonicSelect.innerHTML = '';
+            visualSelect.innerHTML = '';
+
+            sonicIdentities.forEach((identity) => {
+                const option = document.createElement('option');
+                option.value = identity;
+                option.textContent = identity;
+                sonicSelect.appendChild(option);
+            });
+
+            visualDNAs.forEach((dna) => {
+                const option = document.createElement('option');
+                option.value = dna;
+                option.textContent = dna;
+                visualSelect.appendChild(option);
+            });
+
+            if (sonicIdentities.length > 0 && !sonicSelect.value) {
+                sonicSelect.value = sonicIdentities[0];
+            }
+
+            if (visualDNAs.length > 0 && !visualSelect.value) {
+                visualSelect.value = visualDNAs[0];
+            }
+        }
+
+        function renderIdentityLibraries() {
+            const sonicList = document.getElementById('sonicList');
+            const visualList = document.getElementById('visualList');
+
+            sonicList.innerHTML = '';
+            visualList.innerHTML = '';
+
+            sonicIdentities.forEach((identity) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `<span>${identity}</span><button class="ghost-btn" data-remove-sonic="${identity}">Remove</button>`;
+                sonicList.appendChild(item);
+            });
+
+            visualDNAs.forEach((dna) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `<span>${dna}</span><button class="ghost-btn" data-remove-visual="${dna}">Remove</button>`;
+                visualList.appendChild(item);
+            });
+
+            document.querySelectorAll('[data-remove-sonic]').forEach((btn) => {
+                btn.addEventListener('click', () => removeSonicIdentity(btn.getAttribute('data-remove-sonic')));
+            });
+
+            document.querySelectorAll('[data-remove-visual]').forEach((btn) => {
+                btn.addEventListener('click', () => removeVisualDNA(btn.getAttribute('data-remove-visual')));
+            });
+        }
+
+        function addSonicIdentity() {
+            const input = document.getElementById('addSonic');
+            const value = input.value.trim();
+            if (!value) {
+                return;
+            }
+            if (sonicIdentities.some((item) => item.toLowerCase() === value.toLowerCase())) {
+                showToast('Sonic Identity already exists.', 'error');
+                return;
+            }
+            sonicIdentities.push(value);
+            input.value = '';
+            saveLibraries();
+            renderIdentityOptions();
+            renderIdentityLibraries();
+        }
+
+        function addVisualDNA() {
+            const input = document.getElementById('addVisual');
+            const value = input.value.trim();
+            if (!value) {
+                return;
+            }
+            if (visualDNAs.some((item) => item.toLowerCase() === value.toLowerCase())) {
+                showToast('Visual DNA already exists.', 'error');
+                return;
+            }
+            visualDNAs.push(value);
+            input.value = '';
+            saveLibraries();
+            renderIdentityOptions();
+            renderIdentityLibraries();
+        }
+
+        function removeSonicIdentity(name) {
+            if (sonicIdentities.length <= 1) {
+                showToast('At least one Sonic Identity is required.', 'error');
+                return;
+            }
+            sonicIdentities = sonicIdentities.filter((item) => item !== name);
+            saveLibraries();
+            renderIdentityOptions();
+            renderIdentityLibraries();
+        }
+
+        function removeVisualDNA(name) {
+            if (visualDNAs.length <= 1) {
+                showToast('At least one Visual DNA is required.', 'error');
+                return;
+            }
+            visualDNAs = visualDNAs.filter((item) => item !== name);
+            saveLibraries();
+            renderIdentityOptions();
+            renderIdentityLibraries();
+        }
+
+        function saveCustomVisualPreset() {
+            const input = document.getElementById('customVisualDNA');
+            const value = input.value.trim();
+            if (!value) {
+                showFieldError('customVisualDNA', 'Enter a custom Visual DNA before saving.');
+                return;
+            }
+            const exists = visualDNAs.some((item) => item.toLowerCase() === value.toLowerCase());
+            if (exists) {
+                showToast('That Visual DNA already exists.', 'error');
+                return;
+            }
+            visualDNAs.push(value);
+            saveLibraries();
+            renderIdentityOptions();
+            renderIdentityLibraries();
+            document.getElementById('visualSelect').value = value;
+            showToast('Custom Visual DNA saved to library.', 'success');
+        }
+
+        async function makeAPICall(url, options) {
+            try {
+                const response = await fetch(url, options);
+
+                if (!response.ok) {
+                    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error && errorData.error.message) {
+                            errorMessage = errorData.error.message;
+                        }
+                    } catch (e) {
+                        // Ignore JSON parsing errors
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
+                return await response.json();
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    throw new Error('Network error - please check your connection');
+                }
+                throw error;
+            }
+        }
+
+        async function loadModels() {
+            const modelSelect = document.getElementById('modelSelect');
+
+            if (!currentSettings.apiKey) {
+                modelSelect.innerHTML = '<option value="">Please enter API key first</option>';
+                return;
+            }
+
+            modelSelect.innerHTML = '<option value="">Loading models...</option>';
+
+            try {
+                const data = await makeAPICall('https://openrouter.ai/api/v1/models', {
+                    headers: {
+                        'Authorization': `Bearer ${currentSettings.apiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                modelSelect.innerHTML = '<option value="">Select a model...</option>';
+
+                const goodModels = data.data
+                    .filter(model => {
+                        const id = model.id.toLowerCase();
+                        return (
+                            id.includes('gpt') ||
+                            id.includes('claude') ||
+                            id.includes('llama') ||
+                            id.includes('mistral') ||
+                            id.includes('gemini') ||
+                            id.includes('qwen')
+                        ) && !id.includes('vision') && !id.includes('embed');
+                    })
+                    .sort((a, b) => {
+                        const priority = {
+                            'gpt-4': 10,
+                            'claude': 9,
+                            'gpt-3.5': 8,
+                            'llama': 7,
+                            'mistral': 6,
+                            'gemini': 5
+                        };
+
+                        const aPriority = Object.keys(priority).find(key => a.id.includes(key)) || 'other';
+                        const bPriority = Object.keys(priority).find(key => b.id.includes(key)) || 'other';
+
+                        return (priority[bPriority] || 0) - (priority[aPriority] || 0);
+                    });
+
+                goodModels.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+
+                    let priceInfo = 'Pricing N/A';
+                    if (model.pricing && model.pricing.prompt) {
+                        const promptPrice = parseFloat(model.pricing.prompt) * 1000;
+                        priceInfo = `$${promptPrice.toFixed(4)}/1K tokens`;
+                    }
+
+                    option.textContent = `${model.name} - ${priceInfo}`;
+                    modelSelect.appendChild(option);
+                });
+
+                if (currentSettings.selectedModel) {
+                    modelSelect.value = currentSettings.selectedModel;
+                }
+
+                if (!currentSettings.selectedModel && goodModels.length > 0) {
+                    const defaultModel = goodModels.find(m => m.id.includes('gpt-4o-mini')) || goodModels[0];
+                    modelSelect.value = defaultModel.id;
+                    currentSettings.selectedModel = defaultModel.id;
+                    saveSettings();
+                }
+            } catch (error) {
+                console.error('Error loading models:', error);
+                modelSelect.innerHTML = `<option value="">Error: ${error.message}</option>`;
+
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    showToast('Invalid API key. Please check your OpenRouter API key.', 'error');
+                } else if (error.message.includes('Network error')) {
+                    showToast('Network error. Please check your connection and try again.', 'error');
+                } else {
+                    showToast('Failed to load models. Please try again.', 'error');
+                }
+            }
+        }
+
+        async function analyzeLyricsAndGenerateContent({ lyrics, theme, toneDescription, visualDescription, imageData }) {
+            const systemPrompt = `You are an expert music prompt engineer. Return ONLY valid JSON.\n\nReturn this exact JSON shape:\n{\n  "sunoPromptSet": {\n    "sunoPrompt": string,\n    "tags": string,\n    "negativeTags": string\n  },\n  "taggedLyrics": string,\n  "marketingMatrix": {\n    "audience": string,\n    "positioning": string,\n    "hooks": string,\n    "launchAngles": string,\n    "compTitles": string\n  },\n  "concepts": [\n    {\n      "axis": "Literal",\n      "title": string,\n      "visualDescription": string,\n      "colorPalette": string,\n      "artStyle": string,\n      "imagePrompt": string\n    },\n    { "axis": "Emotional", ... },\n    { "axis": "Symbolic", ... },\n    { "axis": "Experimental", ... }\n  ]\n}\n\nRules:\n- Concepts must be exactly 4, one for each axis in this order: Literal, Emotional, Symbolic, Experimental.\n- Keep tags concise but specific.\n- taggedLyrics should include section tags like [Verse], [Chorus] where appropriate.\n- imagePrompt should be a production-ready text-to-image prompt aligned to the concept.`;
+
+            const userContent = `LYRICS:\n${lyrics}\n\nTHEME:\n${theme}\n\nTONE DESCRIPTION:\n${toneDescription}\n\nVISUAL DESCRIPTION:\n${visualDescription}\n\nREFERENCE IMAGE:\n${imageData ? 'Attached as data URL in this request.' : 'None provided.'}`;
+
+            const payload = {
+                model: currentSettings.selectedModel,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userContent }
+                ],
+                temperature: 0.7,
+                max_tokens: 1700,
+                top_p: 0.9
+            };
+
+            if (imageData) {
+                payload.messages.push({ role: 'user', content: `IMAGE_DATA_URL:\n${imageData}` });
+            }
+
+            const data = await makeAPICall('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${currentSettings.apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Suno Prompter'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = data.choices[0].message.content;
+            return JSON.parse(result);
+        }
+
+        async function generateProject() {
+            clearAllFieldErrors();
+            const lyrics = document.getElementById('lyricsInput').value.trim();
+            const theme = document.getElementById('themeInput').value.trim();
+            const sonicIdentity = document.getElementById('sonicSelect').value;
+            const visualDNASelection = document.getElementById('visualSelect').value;
+            const customVisualDNA = document.getElementById('customVisualDNA').value.trim();
+
+            if (!lyrics || !theme) {
+                if (!lyrics) {
+                    showFieldError('lyricsInput', 'Lyrics are required.');
+                }
+                if (!theme) {
+                    showFieldError('themeInput', 'Theme is required.');
+                }
+                showToast('Lyrics and theme are required.', 'error');
+                return;
+            }
+
+            if (lyrics.length > 4000 || theme.length > 800) {
+                showToast('Inputs exceed the character limits.', 'error');
+                return;
+            }
+
+            if (!sonicIdentity) {
+                showFieldError('sonicSelect', 'Select a Sonic Identity.');
+                showToast('Select a Sonic Identity.', 'error');
+                return;
+            }
+
+            if (!visualDNASelection && !customVisualDNA) {
+                showFieldError('visualSelect', 'Select a Visual DNA.');
+                showToast('Select a Visual DNA.', 'error');
+                return;
+            }
+
+            if (!currentSettings.apiKey) {
+                showToast('Please configure your OpenRouter API key in settings!', 'error');
+                openSettings();
+                return;
+            }
+
+            if (!currentSettings.selectedModel) {
+                showToast('Please select an AI model in settings!', 'error');
+                openSettings();
+                return;
+            }
+
+            const generateBtn = document.getElementById('generateBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            loadingSpinner.style.display = 'block';
+
+            try {
+                const toneDescription = sonicIdentity;
+                const visualDescription = customVisualDNA || visualDNASelection;
+
+                const result = await analyzeLyricsAndGenerateContent({
+                    lyrics,
+                    theme,
+                    toneDescription,
+                    visualDescription,
+                    imageData: referenceImageData
+                });
+
+                latestResult = result;
+                renderOutputs(result);
+                showToast('Project generated successfully!', 'success');
+
+                if (window.innerWidth <= 840) {
+                    document.querySelector('[data-tab="output"]').click();
+                }
+            } catch (error) {
+                console.error('Error generating project:', error);
+
+                let errorMessage = 'Failed to generate project';
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage = 'Invalid API key. Please check your settings.';
+                } else if (error.message.includes('429')) {
+                    errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+                } else if (error.message.includes('insufficient_quota')) {
+                    errorMessage = 'Insufficient API credits. Please check your OpenRouter account.';
+                } else if (error.message.includes('Network error')) {
+                    errorMessage = 'Network error. Please check your connection.';
+                } else {
+                    errorMessage = error.message;
+                }
+
+                showToast(errorMessage, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Project';
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        function renderOutputs(result) {
+            const sunoPrompt = result?.sunoPromptSet?.sunoPrompt || 'No Suno prompt returned.';
+            const tags = result?.sunoPromptSet?.tags ? `\n\nTags:\n${result.sunoPromptSet.tags}` : '';
+            const negative = result?.sunoPromptSet?.negativeTags ? `\n\nExclude:\n${result.sunoPromptSet.negativeTags}` : '';
+            document.getElementById('sunoPromptOutput').textContent = `${sunoPrompt}${tags}${negative}`.trim();
+            document.getElementById('taggedLyricsOutput').textContent = result?.taggedLyrics || 'No tagged lyrics returned.';
+
+            const marketing = result?.marketingMatrix;
+            document.getElementById('marketingOutput').textContent = marketing
+                ? `Audience:\n${marketing.audience}\n\nPositioning:\n${marketing.positioning}\n\nHooks:\n${marketing.hooks}\n\nLaunch Angles:\n${marketing.launchAngles}\n\nComp Titles:\n${marketing.compTitles}`
+                : 'No marketing matrix returned.';
+
+            renderConcepts(result?.concepts || []);
+        }
+
+        function renderConcepts(concepts) {
+            const grid = document.getElementById('conceptGrid');
+            grid.innerHTML = '';
+
+            if (!Array.isArray(concepts) || concepts.length === 0) {
+                grid.innerHTML = '<div class="output-content">No concepts returned.</div>';
+                return;
+            }
+
+            const normalized = REQUIRED_AXES.map((axis) => concepts.find((item) => item.axis === axis)).filter(Boolean);
+            normalized.forEach((concept, index) => {
+                const card = document.createElement('div');
+                card.className = 'concept-card';
+                const palette = concept.colorPalette || 'Palette not provided';
+                const paletteItems = palette.split(',').map((item) => item.trim()).filter(Boolean);
+                card.innerHTML = `
+                    <div class="concept-meta">
+                        <span class="concept-axis">${concept.axis || REQUIRED_AXES[index]}</span>
+                        <button class="copy-btn" data-copy-image="${index}">Copy Image Prompt</button>
+                    </div>
+                    <div class="concept-title">${concept.title || 'Untitled Concept'}</div>
+                    <div class="output-content">${concept.visualDescription || 'No visual description provided.'}</div>
+                    <div>
+                        <strong>Color Palette</strong>
+                        <div class="palette-pill">${paletteItems.map((item) => `<span>${item}</span>`).join('')}</div>
+                    </div>
+                    <div><strong>Art Style</strong> — ${concept.artStyle || 'Not specified'}</div>
+                `;
+                grid.appendChild(card);
+            });
+
+            grid.querySelectorAll('[data-copy-image]').forEach((btn, idx) => {
+                btn.addEventListener('click', () => {
+                    const concept = normalized[idx];
+                    if (!concept) {
+                        return;
+                    }
+                    copyTextWithToast(concept.imagePrompt || concept.visualDescription || '');
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'Copy Image Prompt';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        }
+
+        async function copyToClipboard(elementId, button) {
+            const text = document.getElementById(elementId).textContent;
+            copyTextWithToast(text, button);
+        }
+
+        async function copyTextWithToast(text, button) {
+            if (!text) {
+                showToast('Nothing to copy.', 'error');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                if (button) {
+                    button.textContent = 'Copied!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                        button.classList.remove('copied');
+                    }, 2000);
+                }
+                showToast('Copied to clipboard!', 'success');
+            } catch (error) {
+                showToast('Failed to copy text', 'error');
+            }
+        }
+
+        function exportProject() {
+            if (!latestResult) {
+                showToast('Generate a project before exporting.', 'error');
+                return;
+            }
+
+            const content = {
+                exportedAt: new Date().toISOString(),
+                result: latestResult
+            };
+
+            const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `suno-project-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast('Project exported successfully!', 'success');
+        }
+
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            loadModels();
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+
+            if (currentTheme === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                updateThemeToggle('light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                updateThemeToggle('dark');
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            updateThemeToggle(savedTheme);
+        }
+
+        function updateThemeToggle(theme) {
+            const themeToggle = document.getElementById('themeToggle');
+            const isDark = theme === 'dark';
+            themeToggle.textContent = isDark ? '☀' : '☾';
+            themeToggle.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+            themeToggle.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = type === 'error' ? '#ef4444' : '#FF9F00';
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            const hint = document.getElementById('referenceHint');
+            if (!file) {
+                referenceImageData = null;
+                hint.textContent = 'No image selected.';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                referenceImageData = e.target.result;
+                hint.textContent = `Selected: ${file.name}`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettings();
+            }
+        };
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey || event.metaKey) {
+                switch(event.key) {
+                    case 'Enter':
+                        event.preventDefault();
+                        generateProject();
+                        break;
+                    case ',':
+                        event.preventDefault();
+                        openSettings();
+                        break;
+                }
+            }
+
+            if (event.key === 'Escape') {
+                closeSettings();
+            }
+        });
+
+        function showFieldError(fieldId, message) {
+            const fieldContainer = document.querySelector(`[data-field=\"${fieldId}\"]`);
+            const errorText = document.querySelector(`[data-error-for=\"${fieldId}\"]`);
+            if (fieldContainer) {
+                fieldContainer.classList.add('field-error');
+            }
+            if (errorText) {
+                errorText.textContent = message;
+                errorText.style.display = 'block';
+            }
+        }
+
+        function clearFieldError(fieldId) {
+            const fieldContainer = document.querySelector(`[data-field=\"${fieldId}\"]`);
+            const errorText = document.querySelector(`[data-error-for=\"${fieldId}\"]`);
+            if (fieldContainer) {
+                fieldContainer.classList.remove('field-error');
+            }
+            if (errorText) {
+                errorText.style.display = 'none';
+            }
+        }
+
+        function clearAllFieldErrors() {
+            document.querySelectorAll('.field-error').forEach((el) => el.classList.remove('field-error'));
+            document.querySelectorAll('.error-text').forEach((el) => { el.style.display = 'none'; });
+        }
+    </script>
+</body>
+</html>
